@@ -1,0 +1,6 @@
+[
+  { "id": "stack", "name": "Stack", "tagline": "Sticky pile, throwable cards", "active": true },
+  { "id": "grid", "name": "Grid", "tagline": "Three-up overview", "active": true },
+  { "id": "carousel", "name": "Carousel", "tagline": "Center-snap filmstrip", "active": true },
+  { "id": "index", "name": "Index", "tagline": "One project per row", "active": true }
+]

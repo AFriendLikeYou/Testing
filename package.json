@@ -1,0 +1,12 @@
+{
+  "name": "portfolio-bandit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Portfolio layouts tested with a multi-armed bandit (Thompson sampling)",
+  "scripts": {
+    "start": "node server.js",
+    "simulate": "node scripts/simulate.js",
+    "test": "node --test"
+  },
+  "engines": { "node": ">=18" }
+}
