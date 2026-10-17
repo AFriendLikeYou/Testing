@@ -6,6 +6,7 @@ gemessen werden Aboabschlüsse oder Einstiege in die Bestellstrecke.
 
 ## Was steht
 
+- Entscheidungsgrundlage mit Simulationen: `docs/ENTSCHEIDUNGSGRUNDLAGE.md`, Scripts in `analysis/`
 - Thompson-Sampling-Bandit mit Exploration-Floor (`lib/bandit.js`)
 - Paywall-Modus (`MODE=paywall`): Rewards `revenue`, `subscribed`, `checkout` (gewichtet mit
   Abschlussquote je Variante), feste Kontrollgruppe, Zuweisungswahrscheinlichkeit im Log

@@ -57,8 +57,22 @@ Die beobachteten Raten jeder Variante gelten als Wahrheit. Das Script simuliert 
 an Impressions einmal gleichverteilt (wie im A/B-Test) und einmal mit Bandit und zeigt die
 Differenz an Abschlüssen und Umsatz. `examples/ab-tests.csv` enthält **erfundene** Beispieldaten.
 
+**Achtung:** Das Replay nimmt beobachtete Raten als Wahrheit und überschätzt dadurch den Nutzen
+des Bandits. Für Entscheidungen `analysis/compare.js` verwenden (siehe unten).
+
 Im Beispiel sieht man auch, warum die Wahl des Rewards wichtig ist: Mit `revenue` schiebt der
 Bandit Traffic zum Jahresabo. Das bringt weniger Abschlüsse, aber mehr Umsatz.
+
+## Entscheidungsgrundlage
+
+`docs/ENTSCHEIDUNGSGRUNDLAGE.md` bewertet, ob sich ein Bandit für Paywalls lohnt. Die Zahlen
+stammen aus drei Scripts:
+
+```
+node analysis/archive.js <tests.csv>    # Streuung echter Unterschiede im Testarchiv (Meta-Analyse)
+node analysis/power.js --daily 50000    # Welche Unterschiede in welcher Zeit messbar sind
+node analysis/compare.js --sigma 0,0.03,0.1   # A/B vs. sequenzieller A/B vs. Bandit, inkl. Kalibrierung
+```
 
 ## So funktioniert's
 
