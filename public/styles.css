@@ -101,3 +101,4 @@ a { color: inherit; }
   position: absolute; left: 12px; bottom: 12px; font-size: 12px; text-decoration: none;
   background: rgba(30, 30, 30, .8); color: #fff; padding: 6px 12px; border-radius: 99px;
 }
+.badge.control { background: #6b7280; }

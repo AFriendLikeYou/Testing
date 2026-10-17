@@ -9,37 +9,11 @@ const PROJECTS = [
   { slug: 'bank', title: 'Neobank Onboarding', meta: 'Product · 2023', bg: 'linear-gradient(160deg,#e2534a,#9b1f18)' },
 ];
 
-const params = new URLSearchParams(location.search);
 const work = document.getElementById('work');
 
 // ---------- tracking ----------
 
-function getVisitorId() {
-  try {
-    let id = localStorage.getItem('pb-visitor');
-    if (!id) {
-      id = crypto.randomUUID();
-      localStorage.setItem('pb-visitor', id);
-    }
-    return id;
-  } catch {
-    return crypto.randomUUID();
-  }
-}
-
-const visitorId = getVisitorId();
-const sent = new Set();
-let tracking = false;
-
-function track(type) {
-  if (!tracking || sent.has(type)) return;
-  sent.add(type);
-  if (type === 'converted') sent.add('engaged');
-  const body = JSON.stringify({ visitorId, type });
-  if (!navigator.sendBeacon?.('/api/event', body)) {
-    fetch('/api/event', { method: 'POST', body, keepalive: true }).catch(() => {});
-  }
-}
+const track = Bandit.track;
 
 // Engagement must mean the same thing in every layout, otherwise the metric favours
 // whichever layout happens to make it easy (e.g. scroll depth favours the tall Stack page).
@@ -144,101 +118,9 @@ function render(layout) {
   document.documentElement.dataset.layout = layout;
 }
 
-// ---------- dashboard ----------
-
-const dash = document.getElementById('dashboard');
-const pct = (x, d = 1) => `${(x * 100).toFixed(d)}%`;
-const tone = (rank, n) => (rank === 0 ? 'var(--good)' : rank === n - 1 ? 'var(--bad)' : 'var(--mid)');
-
-function metric(label, value, max, color) {
-  const w = max ? Math.min(100, (value / max) * 100) : 0;
-  return `<div class="metric" style="color:${color}">
-    <div class="row"><span class="muted">${label}</span><span>${pct(value)}</span></div>
-    <div class="bar"><i style="width:${w}%"></i></div>
-  </div>`;
-}
-
-let previewsBuilt = false;
-
-async function refreshDashboard() {
-  const res = await fetch('/api/stats');
-  const s = await res.json();
-  document.getElementById('dash-meta').textContent =
-    `optimising ${s.reward === 'converted' ? 'conversion' : 'engagement'} · ${pct(s.explore, 0)} exploration floor`;
-
-  const n = s.arms.length;
-  const rankBy = (key) => [...s.arms].sort((a, b) => b[key] - a[key]).map((a) => a.id);
-  const convRank = rankBy('conversion');
-  const engRank = rankBy('engagement');
-  const maxConv = Math.max(...s.arms.map((a) => a.conversion), 0.0001);
-
-  const grid = document.getElementById('dash-grid');
-  if (!previewsBuilt || grid.children.length !== n) {
-    grid.innerHTML = s.arms.map((a, i) => `<div class="arm" data-id="${a.id}">
-      <div class="arm-title"><span class="muted">${String(i + 1).padStart(2, '0')}</span>
-        <span class="name">${a.name}</span><span class="muted">— ${a.tagline}</span>
-        <span class="badge" hidden>Top</span><span class="visits muted"></span></div>
-      <div class="metrics"></div>
-      <div class="bandit-line muted"></div>
-      <div class="preview"><iframe src="/?layout=${a.id}" loading="lazy" tabindex="-1"></iframe>
-        <a href="/?layout=${a.id}" target="_blank">Use this layout ↗</a></div>
-    </div>`).join('');
-    previewsBuilt = true;
-  }
-
-  for (const a of s.arms) {
-    const el = grid.querySelector(`[data-id="${a.id}"]`);
-    el.querySelector('.badge').hidden = a.id !== s.top;
-    el.querySelector('.visits').textContent = `${a.visits.toLocaleString('en')} visits`;
-    el.querySelector('.metrics').innerHTML =
-      metric('Conversion', a.conversion, maxConv, tone(convRank.indexOf(a.id), n)) +
-      metric('Engagement', a.engagement, 1, tone(engRank.indexOf(a.id), n));
-    el.querySelector('.bandit-line').textContent =
-      `P(best) ${pct(a.pBest, 0)} · gets ${pct(a.share, 0)} of new traffic`;
-  }
-}
-
-function openDashboard() {
-  dash.hidden = false;
-  refreshDashboard();
-  openDashboard.timer ||= setInterval(refreshDashboard, 3000);
-}
-
-function closeDashboard() {
-  dash.hidden = true;
-  clearInterval(openDashboard.timer);
-  openDashboard.timer = null;
-}
-
-document.getElementById('dash-close').addEventListener('click', closeDashboard);
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'd' && !e.metaKey && !e.ctrlKey && e.target === document.body) {
-    dash.hidden ? openDashboard() : closeDashboard();
-  }
-});
-
 // ---------- boot ----------
 
-async function boot() {
-  const forced = params.get('layout');
-  if (forced) {
-    // Preview mode: show a specific layout without assigning or counting anything.
-    render(forced);
-  } else {
-    try {
-      const res = await fetch('/api/assign', {
-        method: 'POST',
-        body: JSON.stringify({ visitorId }),
-      });
-      const { layout } = await res.json();
-      tracking = true;
-      render(layout);
-      watchEngagement();
-    } catch {
-      render('grid');
-    }
-  }
-  if (params.has('dashboard')) openDashboard();
-}
-
-boot();
+Bandit.assign('grid').then((layout) => {
+  render(layout);
+  if (Bandit.isTracking()) watchEngagement();
+});

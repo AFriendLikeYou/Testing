@@ -1,0 +1,51 @@
+[
+  {
+    "id": "control",
+    "name": "Standard",
+    "tagline": "Current paywall, monthly offer",
+    "active": true,
+    "control": true,
+    "value": 80,
+    "style": "inline",
+    "headline": "Weiterlesen mit dem Digitalabo",
+    "text": "Alle Artikel, die App und das E-Paper. Jederzeit kündbar.",
+    "offer": "4 Wochen kostenlos, danach 4,99 € pro Woche",
+    "cta": "Jetzt testen"
+  },
+  {
+    "id": "trial",
+    "name": "Trial",
+    "tagline": "Low entry price up front",
+    "active": true,
+    "value": 45,
+    "style": "inline",
+    "headline": "Testen Sie uns für 1 €",
+    "text": "Vier Wochen alles lesen. Danach entscheiden Sie.",
+    "offer": "4 Wochen für 1 €, danach 4,99 € pro Woche",
+    "cta": "Für 1 € testen"
+  },
+  {
+    "id": "annual",
+    "name": "Annual",
+    "tagline": "Discounted yearly plan",
+    "active": true,
+    "value": 150,
+    "style": "inline",
+    "headline": "Ein Jahr guter Journalismus",
+    "text": "Mit dem Jahresabo sparen Sie gegenüber dem Monatsabo.",
+    "offer": "12 Monate für 149 € (statt 259 €)",
+    "cta": "Jahresabo sichern"
+  },
+  {
+    "id": "sheet",
+    "name": "Bottom sheet",
+    "tagline": "Monthly offer, sheet instead of cut-off",
+    "active": true,
+    "value": 80,
+    "style": "sheet",
+    "headline": "Dieser Artikel ist Teil des Digitalabos",
+    "text": "Unterstützen Sie unabhängigen Journalismus.",
+    "offer": "4 Wochen kostenlos, danach 4,99 € pro Woche",
+    "cta": "Jetzt testen"
+  }
+]

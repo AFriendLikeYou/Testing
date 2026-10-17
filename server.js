@@ -4,13 +4,24 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const { chooseArm, expectedShare } = require('./lib/bandit');
+const { getMode } = require('./lib/modes');
 
 const PORT = Number(process.env.PORT) || 3000;
-// Which signal the bandit optimises: 'converted' or 'engaged'.
-const REWARD = process.env.REWARD === 'engagement' ? 'engaged' : 'converted';
+const MODE_NAME = process.env.MODE || 'portfolio';
+const MODE = getMode(MODE_NAME);
+const REWARD = process.env.REWARD || MODE.defaultReward;
+if (!MODE.rewards[REWARD]) {
+  throw new Error(`Unknown REWARD "${REWARD}" for mode ${MODE_NAME}. Use one of: ${Object.keys(MODE.rewards).join(', ')}`);
+}
 const EXPLORE = Number(process.env.EXPLORE ?? 0.05);
+// Share of traffic that always sees the control variant, outside the bandit.
+const HOLDOUT = Number(process.env.HOLDOUT ?? MODE.holdout);
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const DATA_FILE = path.join(__dirname, 'data', 'state.json');
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+const DATA_FILE = path.join(DATA_DIR, `state-${MODE_NAME}.json`);
+// One line per assignment with the probability it was chosen with, so effects can later
+// be estimated without the bias adaptive allocation introduces (inverse propensity weighting).
+const IMPRESSION_LOG = path.join(DATA_DIR, `impressions-${MODE_NAME}.jsonl`);
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -20,8 +31,8 @@ const MIME = {
   '.svg': 'image/svg+xml',
 };
 
-function loadLayouts() {
-  return JSON.parse(fs.readFileSync(path.join(__dirname, 'layouts.json'), 'utf8'));
+function loadVariants() {
+  return JSON.parse(fs.readFileSync(path.join(__dirname, MODE.variantsFile), 'utf8'));
 }
 
 function loadState() {
@@ -33,53 +44,79 @@ function loadState() {
 }
 
 const state = loadState();
+fs.mkdirSync(DATA_DIR, { recursive: true });
 
 let saveTimer = null;
 function scheduleSave() {
   if (saveTimer) return;
   saveTimer = setTimeout(() => {
     saveTimer = null;
-    fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
     fs.writeFileSync(DATA_FILE, JSON.stringify(state));
   }, 500);
 }
 
 function armStats(id) {
-  if (!state.arms[id]) state.arms[id] = { visits: 0, engaged: 0, converted: 0 };
+  if (!state.arms[id]) state.arms[id] = Object.fromEntries(['visits', ...MODE.events].map((k) => [k, 0]));
   return state.arms[id];
 }
 
-// layouts.json is re-read on every request so new variants go live without a restart.
+// The variants file is re-read on every request so new variants go live without a restart.
 function activeArms() {
-  return loadLayouts()
-    .filter((l) => l.active)
-    .map((l) => ({ ...l, ...armStats(l.id) }));
+  return loadVariants()
+    .filter((v) => v.active)
+    .map((v) => ({ ...v, ...armStats(v.id) }));
 }
 
-function banditArms(arms) {
-  return arms.map((a) => ({ id: a.id, trials: a.visits, successes: a[REWARD] }));
+function splitArms(arms) {
+  const control = HOLDOUT > 0 ? arms.find((a) => a.control) : undefined;
+  return { control, bandit: arms.filter((a) => a !== control) };
+}
+
+function shares(banditArms) {
+  return expectedShare(banditArms, { explore: EXPLORE, sampler: MODE.rewards[REWARD](banditArms) });
+}
+
+// Thompson sampling has no closed-form choice probability, so the propensity logged with each
+// impression is the Monte Carlo share, refreshed every few seconds.
+let shareCache = { at: 0, share: {} };
+function cachedShare(banditArms) {
+  if (Date.now() - shareCache.at > 5000) shareCache = { at: Date.now(), share: shares(banditArms).share };
+  return shareCache.share;
 }
 
 function assign(visitorId) {
   const arms = activeArms();
   const known = state.visitors[visitorId];
-  // Sticky: a returning visitor keeps their layout as long as it is still running.
+  // Sticky: a returning visitor keeps their variant as long as it is still running.
   if (known && arms.some((a) => a.id === known.arm)) return known.arm;
-  const arm = chooseArm(banditArms(arms), { explore: EXPLORE });
-  state.visitors[visitorId] = { arm, engaged: false, converted: false, ts: Date.now() };
+
+  const { control, bandit } = splitArms(arms);
+  let arm;
+  let propensity;
+  if (control && (Math.random() < HOLDOUT || !bandit.length)) {
+    arm = control.id;
+    propensity = bandit.length ? HOLDOUT : 1;
+  } else {
+    arm = chooseArm(bandit, { explore: EXPLORE, sampler: MODE.rewards[REWARD](bandit) });
+    propensity = (control ? 1 - HOLDOUT : 1) * (cachedShare(bandit)[arm] ?? 1 / bandit.length);
+  }
+
+  state.visitors[visitorId] = { arm, events: {}, ts: Date.now() };
   armStats(arm).visits++;
+  fs.appendFileSync(IMPRESSION_LOG, JSON.stringify({ ts: Date.now(), visitorId, arm, propensity }) + '\n');
   scheduleSave();
   return arm;
 }
 
 function record(visitorId, type) {
   const v = state.visitors[visitorId];
-  if (!v || (type !== 'engaged' && type !== 'converted')) return false;
-  const marks = type === 'converted' ? ['engaged', 'converted'] : ['engaged'];
-  for (const m of marks) {
-    if (v[m]) continue;
-    v[m] = true;
-    armStats(v.arm)[m]++;
+  if (!v || !MODE.events.includes(type)) return false;
+  // Older state files stored events as top-level booleans.
+  v.events ||= {};
+  for (const e of [type, ...(MODE.implies[type] || [])]) {
+    if (v.events[e]) continue;
+    v.events[e] = true;
+    armStats(v.arm)[e]++;
   }
   scheduleSave();
   return true;
@@ -87,21 +124,28 @@ function record(visitorId, type) {
 
 function stats() {
   const arms = activeArms();
-  const { pBest, share } = expectedShare(banditArms(arms), { explore: EXPLORE });
-  const top = arms.reduce((best, a) => (pBest[a.id] > (pBest[best?.id] ?? -1) ? a : best), null);
+  const { control, bandit } = splitArms(arms);
+  const { pBest, share } = bandit.length ? shares(bandit) : { pBest: {}, share: {} };
+  const top = bandit.reduce((best, a) => (pBest[a.id] > (pBest[best?.id] ?? -1) ? a : best), null);
+  const controlValue = control?.visits ? MODE.upliftValue(control) : null;
+
   return {
+    mode: MODE_NAME,
     reward: REWARD,
     explore: EXPLORE,
+    holdout: control ? HOLDOUT : 0,
     top: top?.id ?? null,
+    metrics: MODE.metrics.map((m) => ({ label: m.label, format: m.format })),
     arms: arms.map((a) => ({
       id: a.id,
       name: a.name,
       tagline: a.tagline,
+      control: a === control,
       visits: a.visits,
-      conversion: a.visits ? a.converted / a.visits : 0,
-      engagement: a.visits ? a.engaged / a.visits : 0,
-      pBest: pBest[a.id],
-      share: share[a.id],
+      metrics: MODE.metrics.map((m) => m.value(a)),
+      uplift: controlValue && a !== control && a.visits ? MODE.upliftValue(a) / controlValue - 1 : null,
+      pBest: a === control ? null : pBest[a.id],
+      share: a === control ? HOLDOUT : (1 - (control ? HOLDOUT : 0)) * share[a.id],
     })),
   };
 }
@@ -130,7 +174,7 @@ function send(res, status, data) {
 
 function serveStatic(req, res) {
   const urlPath = decodeURIComponent(new URL(req.url, 'http://x').pathname);
-  const file = path.join(PUBLIC_DIR, urlPath === '/' ? 'index.html' : urlPath);
+  const file = path.join(PUBLIC_DIR, urlPath === '/' ? MODE.page : urlPath);
   if (!file.startsWith(PUBLIC_DIR + path.sep)) return send(res, 403, { error: 'forbidden' });
   fs.readFile(file, (err, buf) => {
     if (err) return send(res, 404, { error: 'not found' });
@@ -145,20 +189,21 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && req.url === '/api/assign') {
     const { visitorId } = await readJson(req);
     if (!VALID_ID.test(visitorId || '')) return send(res, 400, { error: 'visitorId' });
-    return send(res, 200, { layout: assign(visitorId) });
+    return send(res, 200, { variant: assign(visitorId) });
   }
   if (req.method === 'POST' && req.url === '/api/event') {
     const { visitorId, type } = await readJson(req);
     return send(res, record(visitorId, type) ? 200 : 400, {});
   }
   if (req.method === 'GET' && req.url === '/api/stats') return send(res, 200, stats());
+  if (req.method === 'GET' && req.url === '/api/variants') return send(res, 200, loadVariants());
   if (req.method === 'GET') return serveStatic(req, res);
   send(res, 405, { error: 'method' });
 });
 
 if (require.main === module) {
   server.listen(PORT, () => {
-    console.log(`Portfolio bandit on http://localhost:${PORT}  (reward: ${REWARD}, explore: ${EXPLORE})`);
+    console.log(`Bandit (${MODE_NAME}) on http://localhost:${PORT}  reward: ${REWARD}, explore: ${EXPLORE}, holdout: ${HOLDOUT}`);
     console.log(`Dashboard: http://localhost:${PORT}/?dashboard`);
   });
 }

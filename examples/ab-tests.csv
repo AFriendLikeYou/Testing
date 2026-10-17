@@ -1,0 +1,8 @@
+# Made-up example data. Replace with an export of your own finished A/B tests.
+test,variant,impressions,checkouts,subscriptions,value,control
+paywall-copy-q1,control,60000,1500,330,80,1
+paywall-copy-q1,trial,60000,2100,420,45,
+paywall-copy-q1,annual,60000,1150,250,150,
+paywall-copy-q1,sheet,60000,1700,360,80,
+interstitial-sep,control,40000,700,150,80,1
+interstitial-sep,value-argument,40000,760,170,80,
