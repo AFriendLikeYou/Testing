@@ -2,7 +2,7 @@
   {
     "id": "control",
     "name": "Standard",
-    "tagline": "Current paywall, monthly offer",
+    "tagline": "Heutige Paywall, Monatsabo",
     "active": true,
     "control": true,
     "value": 80,
@@ -14,8 +14,8 @@
   },
   {
     "id": "trial",
-    "name": "Trial",
-    "tagline": "Low entry price up front",
+    "name": "Probeabo",
+    "tagline": "Niedriger Einstiegspreis",
     "active": true,
     "value": 45,
     "style": "inline",
@@ -26,8 +26,8 @@
   },
   {
     "id": "annual",
-    "name": "Annual",
-    "tagline": "Discounted yearly plan",
+    "name": "Jahresabo",
+    "tagline": "Rabatt auf 12 Monate",
     "active": true,
     "value": 150,
     "style": "inline",
@@ -38,8 +38,8 @@
   },
   {
     "id": "sheet",
-    "name": "Bottom sheet",
-    "tagline": "Monthly offer, sheet instead of cut-off",
+    "name": "Bottom Sheet",
+    "tagline": "Monatsabo als Overlay statt Abbruch",
     "active": true,
     "value": 80,
     "style": "sheet",

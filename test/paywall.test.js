@@ -44,6 +44,7 @@ test('server: holdout, sticky assignment, events and propensity log', async () =
 
     const again = await (await post('/api/assign', { visitorId: ids[0] })).json();
     assert.strictEqual(again.variant, assigned[0], 'assignment is sticky');
+    assert.strictEqual(again.how, 'returning');
 
     const controlShare = assigned.filter((v) => v === 'control').length / assigned.length;
     assert.ok(controlShare > 0.12 && controlShare < 0.28, `control share ${controlShare}`);

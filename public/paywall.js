@@ -12,7 +12,7 @@ function render(v) {
     <p class="offer">${v.offer}</p>
     <button class="cta" id="paywall-cta">${v.cta}</button>
   </div>`;
-  if (v.style === 'sheet') document.body.insertAdjacentHTML('beforeend', html);
+  if (v.style === 'sheet') document.getElementById('view-visit').insertAdjacentHTML('beforeend', html);
   else slot.innerHTML = html;
 
   document.getElementById('paywall-cta').addEventListener('click', () => {

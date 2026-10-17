@@ -90,13 +90,15 @@ function assign(visitorId) {
   const arms = activeArms();
   const known = state.visitors[visitorId];
   // Sticky: a returning visitor keeps their variant as long as it is still running.
-  if (known && arms.some((a) => a.id === known.arm)) return known.arm;
+  if (known && arms.some((a) => a.id === known.arm)) return { arm: known.arm, how: 'returning' };
 
   const { control, bandit } = splitArms(arms);
   let arm;
   let propensity;
+  let how = 'bandit';
   if (control && (Math.random() < HOLDOUT || !bandit.length)) {
     arm = control.id;
+    how = 'control';
     propensity = bandit.length ? HOLDOUT : 1;
   } else {
     arm = chooseArm(bandit, { explore: EXPLORE, sampler: MODE.rewards[REWARD](bandit) });
@@ -107,7 +109,7 @@ function assign(visitorId) {
   armStats(arm).visits++;
   fs.appendFileSync(IMPRESSION_LOG, JSON.stringify({ ts: Date.now(), visitorId, arm, propensity }) + '\n');
   scheduleSave();
-  return arm;
+  return { arm, how };
 }
 
 function record(visitorId, type) {
@@ -191,7 +193,9 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && req.url === '/api/assign') {
     const { visitorId } = await readJson(req);
     if (!VALID_ID.test(visitorId || '')) return send(res, 400, { error: 'visitorId' });
-    return send(res, 200, { variant: assign(visitorId) });
+    const { arm, how } = assign(visitorId);
+    // `how` tells the page why it got this variant: returning visitor, control group or bandit.
+    return send(res, 200, { variant: arm, how });
   }
   if (req.method === 'POST' && req.url === '/api/event') {
     const { visitorId, type } = await readJson(req);

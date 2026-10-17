@@ -14,13 +14,21 @@ Zwei Modi, umschaltbar per `MODE`:
 ```
 npm start                 # Portfolio-Modus, http://localhost:3000
 npm run start:paywall     # Paywall-Modus (= node server.js --mode=paywall)
-                          # Dashboard jeweils unter /?dashboard oder mit Taste "d"
+npm run seed              # in einem zweiten Terminal: simulierte Testbesucher schicken
 npm run replay            # Alte A/B-Tests nachspielen: Gleichverteilung vs. Bandit
 npm run simulate          # Simulation: wie der Bandit Traffic umverteilt
 npm test
 ```
 
-Keine Dependencies, nur Node ≥ 18. Eine Variante lässt sich ohne Zählung ansehen mit `/?variant=<id>`.
+Keine Dependencies, nur Node ≥ 18. Danach http://localhost:3000 öffnen. Oben gibt es drei Tabs:
+
+| Tab | Inhalt |
+| --- | --- |
+| Als Besucher | Die Seite, wie ein Besucher sie sieht. Rechts oben steht, welche Variante du bekommen hast und warum. |
+| Dashboard | Besucher, Kennzahlen, Chance auf Platz 1 und Traffic-Anteil je Variante, dazu ein Text „Was gerade passiert“. Direkt erreichbar über `/#dashboard`. |
+| Worum geht's | Kurze Erklärung von A/B-Test, Bandit und Kontrollgruppe. |
+
+Eine Variante lässt sich ohne Zählung ansehen mit `/?variant=<id>`.
 
 ## Paywall-Modus
 
@@ -108,9 +116,9 @@ jedem Layout dasselbe bedeuten.
 
 ### Dashboard
 
-`/?dashboard` zeigt pro Variante Visits, Conversion, Engagement, **P(best)** (wie
+Der Tab „Dashboard“ zeigt pro Variante Visits, Conversion, Engagement, **P(best)** (wie
 wahrscheinlich dieses Layout das beste ist) und den Anteil am neuen Traffic, dazu eine
-Live-Vorschau. „Preview ↗“ öffnet `/?variant=<id>`. Das ist ein Preview-Modus,
+Live-Vorschau. „Vorschau öffnen ↗“ öffnet `/?variant=<id>`. Das ist ein Preview-Modus,
 der nichts zählt.
 
 ## Neues Layout hinzufügen (der „Endless Loop“)
