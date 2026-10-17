@@ -1,0 +1,17 @@
+{
+  "name": "portfolio-bandit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-armed bandit (Thompson sampling) for portfolio layouts and paywall variants",
+  "scripts": {
+    "start": "node server.js",
+    "start:paywall": "node server.js --mode=paywall",
+    "simulate": "node scripts/simulate.js",
+    "replay": "node scripts/replay.js examples/ab-tests.csv",
+    "test": "node --test",
+    "seed": "node scripts/seed.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
