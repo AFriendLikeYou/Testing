@@ -7,7 +7,9 @@ const { chooseArm, expectedShare } = require('./lib/bandit');
 const { getMode } = require('./lib/modes');
 
 const PORT = Number(process.env.PORT) || 3000;
-const MODE_NAME = process.env.MODE || 'portfolio';
+// --mode=<name> works on every OS; MODE=<name> as an environment variable works too.
+const modeArg = process.argv.find((a) => a.startsWith('--mode='));
+const MODE_NAME = modeArg?.slice('--mode='.length) || process.env.MODE || 'portfolio';
 const MODE = getMode(MODE_NAME);
 const REWARD = process.env.REWARD || MODE.defaultReward;
 if (!MODE.rewards[REWARD]) {

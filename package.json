@@ -5,7 +5,7 @@
   "description": "Multi-armed bandit (Thompson sampling) for portfolio layouts and paywall variants",
   "scripts": {
     "start": "node server.js",
-    "start:paywall": "MODE=paywall node server.js",
+    "start:paywall": "node server.js --mode=paywall",
     "simulate": "node scripts/simulate.js",
     "replay": "node scripts/replay.js examples/ab-tests.csv",
     "test": "node --test"

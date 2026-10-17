@@ -13,7 +13,7 @@ Zwei Modi, umschaltbar per `MODE`:
 
 ```
 npm start                 # Portfolio-Modus, http://localhost:3000
-npm run start:paywall     # Paywall-Modus (= MODE=paywall npm start)
+npm run start:paywall     # Paywall-Modus (= node server.js --mode=paywall)
                           # Dashboard jeweils unter /?dashboard oder mit Taste "d"
 npm run replay            # Alte A/B-Tests nachspielen: Gleichverteilung vs. Bandit
 npm run simulate          # Simulation: wie der Bandit Traffic umverteilt
