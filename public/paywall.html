@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paywall Demo</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/paywall.css">
+</head>
+<body>
+  <section id="view-visit">
+  <header class="masthead">Das Beispiel-Magazin</header>
+  <main class="article">
+    <p class="kicker muted">Wirtschaft</p>
+    <h1>Warum kleine Städte plötzlich wieder wachsen</h1>
+    <p class="lead">Jahrzehntelang zogen junge Menschen in die Metropolen. Jetzt kehrt sich der Trend in vielen Regionen um – mit Folgen für Wohnungsmarkt, Arbeitgeber und Kommunen.</p>
+    <p>Wer an einem Dienstagmorgen durch die Innenstadt geht, sieht etwas, das es hier lange nicht gab: Baukräne, neue Cafés und Familien mit Kinderwagen. Die Einwohnerzahl ist in den vergangenen fünf Jahren um fast acht Prozent gestiegen.</p>
+    <div id="paywall-slot"></div>
+    <div id="rest" class="rest">
+      <p>Ein Grund dafür ist das mobile Arbeiten. Viele Unternehmen erlauben inzwischen dauerhaft zwei oder drei Tage im Homeoffice, und damit wird der Wohnort weniger wichtig als die Bahnverbindung.</p>
+      <p>Doch der Zuzug bringt neue Probleme. Die Mieten steigen auch hier, und Kitaplätze werden knapp.</p>
+    </div>
+  </main>
+
+  <div id="checkout" class="checkout" hidden>
+    <div class="checkout-panel">
+      <p class="muted">Bestellstrecke (Demo)</p>
+      <h2 id="checkout-offer"></h2>
+      <label>E-Mail<input type="email" placeholder="name@example.com"></label>
+      <button id="checkout-buy" class="cta">Zahlungspflichtig bestellen</button>
+      <button id="checkout-cancel" class="link">Abbrechen</button>
+    </div>
+  </div>
+  </section>
+
+  <script src="/shared.js"></script>
+  <script src="/paywall.js"></script>
+</body>
+</html>
